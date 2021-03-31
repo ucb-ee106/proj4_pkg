@@ -8,7 +8,7 @@ import numpy as np
 from utils import *
 import math
 import trimesh
-import vtkplotter
+import vedo
 
 MAX_GRIPPER_DIST = 0.075
 MIN_GRIPPER_DIST = 0.03
@@ -268,13 +268,13 @@ def visualize_grasp(mesh, vertices, pose):
 
     contact_points = []
     for v in vertices:
-        contact_points.append(vtkplotter.shapes.Point(pos=v, r=30))
+        contact_points.append(vedo.Point(pos=v, r=30))
 
     vec = (p1 - p2) / np.linalg.norm(p1 - p2)
-    line = vtkplotter.shapes.Tube([center + 0.5 * MAX_GRIPPER_DIST * vec,
+    line = vedo.shapes.Tube([center + 0.5 * MAX_GRIPPER_DIST * vec,
                                    center - 0.5 * MAX_GRIPPER_DIST * vec], r=0.001, c='g')
-    approach = vtkplotter.shapes.Tube([center, tail], r=0.001, c='g')
-    vtkplotter.show([mesh, line, approach] + contact_points, newPlotter=True)
+    approach = vedo.shapes.Tube([center, tail], r=0.001, c='g')
+    vedo.show([mesh, line, approach] + contact_points, new=True)
 
 
 def randomly_sample_from_mesh(mesh, n):
