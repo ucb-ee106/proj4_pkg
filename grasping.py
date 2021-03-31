@@ -89,8 +89,20 @@ def get_grasp_map(vertices, normals, num_facets, mu, gamma):
 
 def contact_forces_exist(vertices, normals, num_facets, mu, gamma, desired_wrench):
     """
-    Compute whether the given grasp (at contacts with surface normals) can produce 
-    the desired_wrench.  will be used for gravity resistance. 
+    Compute the minimum norm input force required for the given grasp 
+    (at contacts with surface normals) to produce the desired_wrench. 
+    This is a utility function that you may choose to implement to 
+    use in other functions.
+
+    If G is the grasp map and w the given desired_wrench, this function would compute
+
+    argmin ||f||^2
+    subject to f in friction cone and Gf = w
+
+    You can then use this function in the gravity resistence metric and also to
+    implement LQ in the ferrari canny metric. What you return from this function
+    is up to you. You may choose to return the final objective value, the solution f,
+    and a boolean indicating whether the problem is feasible.
 
     Parameters
     ----------
@@ -110,7 +122,7 @@ def contact_forces_exist(vertices, normals, num_facets, mu, gamma, desired_wrenc
 
     Returns
     -------
-    bool : whether contact forces can produce the desired_wrench on the object
+    up to you.
     """
     raise NotImplementedError
 
