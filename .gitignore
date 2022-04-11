@@ -1,1 +1,6 @@
-__pycache__
+*.pyc
+src/proj4_pkg.egg-info
+*.csv
+*.bag
+*.mp4
+*.png
