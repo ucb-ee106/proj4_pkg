@@ -97,27 +97,33 @@ class TurtlebotFBLin:
         Solve for the input z to the feedback linearized system.
         Use linear tracking control techniques to accomplish this.
         """
-        #get the state of turtlebot i
-        q = self.observer.get_state()
+        #get the state of the turtlebot
+        qe = self.observer.get_state()
 
-        #get the derivative of q of turtlebot i
-        qDot = self.observer.get_vel()
+        #get the derivative of q of the turtlebot
+        qeDot = self.observer.get_vel()
 
         #get the trajectory states
         xD, vD, aD = self.trajectory.get_state(t)
 
-        #form the augmented state vector.
-        qPrime = np.array([q[0, 0], q[1, 0], qDot[0, 0], qDot[1, 0]]).T
+        """
+        TODO: Your code here
+        In this function, you will determine the augmented input z = [z1, z2]^T to the turtlebot using a feedback
+        linearizing controller. Several useful terms for this controller have been extracted above for you.
 
-        #form the augmented desired state vector
-        qPrimeDes = np.array([xD[0, 0], xD[1, 0], vD[0, 0], vD[1, 0]]).T
+        They are defined as follows:
+            qe (3x1 NumPy Array): current state vector [x, y, phi]^T of the turtlebot we wish to control
+            qeDot (3x1 NumPy Array): current derivative of the state vector [xDot, yDot, phiDot]^T of the turtlebot we wish to control
+            xD, vD, aD (3x1 NumPy Arrays): desired state vector, desired derivative of state vector, desired second derivative of state vector
+            from a desired trajectory. These give the necessary parameters of the trajectory we wish the turtlebot to track. Recall that we 
+            only care about the [x, y] components of these trajectories, as our outputs are x and y.
 
-        #find a control input z to the augmented system
-        k1 = 4 #pick k1, k2 s.t. eddot + k2 edot + k1 e = 0 has stable soln
-        k2 = 4
-        e = np.array([[xD[0, 0], xD[1, 0]]]).T - np.array([[q[0, 0], q[1, 0]]]).T
-        eDot = np.array([[vD[0, 0], vD[1, 0]]]).T - np.array([[qDot[0, 0], qDot[1, 0]]]).T
-        z = aD[0:2].reshape((2, 1)) + k2*eDot + k1 * e
+        NOTE: In this function, the subscript 'e' stands for 'ego' - this is the name of the turtlebot we wish to control.
+        """
+
+        #TODO: calculate the z input to the system
+
+        z = ...
 
         #return the z input
         return z
@@ -129,44 +135,69 @@ class TurtlebotFBLin:
             t (float): current time in the system
             z ((2x1) NumPy Array): z input to the system
         """
-        #get the current phi
-        phi = self.observer.get_state()[2, 0]
+        #get the state of the turtlebot
+        qe = self.observer.get_state()
 
-        #get the (xdot, ydot) velocity
-        qDot = self.observer.get_vel()[0:2]
-        v = np.linalg.norm(qDot)
+        #get the derivative of q of the turtlebot
+        qeDot = self.observer.get_vel()
 
-        #first, eval A(q)
-        Aq = np.array([[np.cos(phi), -v*np.sin(phi)], 
-                       [np.sin(phi), v*np.cos(phi)]])
+        #get the trajectory states
+        xD, vD, aD = self.trajectory.get_state(t)
 
-        #invert to get the w input - use pseudoinverse to avoid problems
-        w = np.linalg.pinv(Aq)@z
+        """
+        TODO: Your code here
+        In this function, you will determine the augmented input w = [w1, w2]^T to the turtlebot using a feedback
+        linearizing controller. Several useful terms for this controller have been extracted above for you.
 
-        #return w input
+        They are defined as follows:
+            z (2x1 NumPy Array): z input to the system as determined by the function eval_z_input() above
+            qe (3x1 NumPy Array): current state vector [x, y, phi]^T of the turtlebot we wish to control
+            qeDot (3x1 NumPy Array): current derivative of the state vector [xDot, yDot, phiDot]^T of the turtlebot we wish to control
+            xD, vD, aD (3x1 NumPy Arrays): desired state vector, desired derivative of state vector, desired second derivative of state vector
+            from a desired trajectory. These give the necessary parameters of the trajectory we wish the turtlebot to track. Recall that we 
+            only care about the [x, y] components of these trajectories, as our outputs are x and y.
+
+        NOTE: In this function, the subscript 'e' stands for 'ego' - this is the name of the turtlebot we wish to control.
+        """
+
+        #TODO: calculate the w input to the system
+        w = ...
+
         return w
 
     def eval_input(self, t):
         """
-        Solves for the control input to turtlebot i using a CBF-QP controller.
+        Solves for the control input to the ego turtlebot using a feedback linearizing controller.
         Inputs:
             t (float): current time in simulation
-            i (int): index of turtlebot in the system we wish to control (zero indexed)
         """
+
         #get the z input to the system
         z = self.eval_z_input(t)
 
-        #SET THE VALUE OF z in the DYNAMICS
+        #SET THE VALUE OF z in the DYNAMICS - DO NOT CHANGE THIS LINE
         self.observer.dynamics.set_z(z, self.observer.index)
 
         #get the w input to the system
         w = self.eval_w_input(t, z)
 
-        #integrate the w1 term to get v
-        self.vDotInt += w[0, 0]*self.dt
+        """
+        TODO: Your code here
+        In this function, you will determine the input u = [v, omega]^T to the turtlebot using a feedback
+        linearizing controller. Several useful terms for this controller have been extracted above for you.
+
+        Once you've calculated your control input, you should store it in the variable self._u at the bottom of this function.
+        Hints: To keep track of the integrated input, define an integral parameter in the class that you can refer to each time
+        the function is called.
+        
+        NOTE: The time step for integration is stored in self.dt if you choose to use a numerical integral in your code.
+        """
+
+        #TODO: calculate u = [v, omega]^T using the augmented z and w inputs (which have been called above already)
+
+        self._u = ...
 
         #return the [v, omega] input
-        self._u = np.array([[self.vDotInt, w[1, 0]]]).T
         return self._u
     
     def get_input(self):
@@ -180,9 +211,7 @@ class TurtlebotFBLin:
 class TurtlebotCBFQP:
     def __init__(self, observer, barriers, trajectory):
         """
-        Class for a CBF-QP controller for a single turtlebot within a larger system. This implementation
-        applies a CBF-QP directly over the turtlebot feedback linearizing input, and does not include 
-        deadlock resolution steps.
+        Class for a CBF-QP controller for a single turtlebot within a larger system.
         Args:
             observer (EgoTurtlebotObserver): state observer object for a single turtlebot within the system
             barriers (List of TurtlebotBarrier): List of TurtlebotBarrier objects corresponding to that turtlebot
@@ -204,50 +233,7 @@ class TurtlebotCBFQP:
         Solves for the control input to turtlebot i using a CBF-QP controller.
         Inputs:
             t (float): current time in simulation
-            i (int): index of turtlebot in the system we wish to control (zero indexed)
-            dLock (boolean): include deadlock resolution strategy in controller
         """
-        #get the state vector of turtlebot i
-        q = self.observer.get_state()
-
-        #get the nominal control input to the system
-        self.nominalController.eval_input(t) #call the evaluation function
-        kX = self.nominalController.get_input()
-
-        #set up the optimization problem
-        opti = ca.Opti()
-
-        #define the decision variable
-        u = opti.variable(2, 1)
-
-        #define gamma for CBF tuning
-        gamma = 1
-
-        #apply the N-1 barrier constraints
-        for bar in self.barriers:
-            #get the values of h and hDot
-            h, hDot = bar.eval(u, t)
-
-            #compute the optimization constraint
-            opti.subject_to(hDot >= -gamma * h)
-
-        cost = (u - kX).T @ (u - kX)
-
-        opti.minimize(cost)
-        option = {"verbose": False, "ipopt.print_level": 0, "print_time": 0}
-        opti.solver("ipopt", option)
-
-        #solve optimization
-        try:
-            sol = opti.solve()
-            uOpt = sol.value(u) #extract optimal input
-            solverFailed = False
-        except:
-            print("Solver failed!")
-            solverFailed = True
-            uOpt = np.zeros((2, 1))
-        #evaluate and return the input
-        self._u = uOpt.reshape((2, 1))
         return self._u
     
     def get_input(self):
@@ -282,69 +268,100 @@ class TurtlebotCBFQPDeadlock(TurtlebotCBFQP):
         Evaluate the Z input to the system based off of the CBF QP with deadlock resolution.
         Applies a CBF-QP around the nominal z input from feedback linearization.
         """
-        #first, get z from the nominal FB lin contorller
+        #first, get zNominal from the nominal FB lin contorller
         zNom = self.nominalController.eval_z_input(t)
 
-        #now, apply a CBF-QP over this z input using the simplified dynamics. This will be a second order CBF.
-        #set up the optimization problem
-        opti = ca.Opti()
+        """
+        TODO: Your code here
+        In this function, you will determine the SAFE input z to the turtlebot using a CBF-QP.
+        Several useful terms for this controller have been extracted above for you.
 
-        #define the decision variable
-        u = opti.variable(2, 1)
-
-        #define a weighting variable for CBF-QP to encourage steering
-        H = np.diag([1, 0.001])
-
-        #define gamma for CBF tuning (100, 29)
-        k1 = 100
-        k2 = 29
-
-        #apply the N-1 barrier constraints
-        for bar in self.barriers:
-            #get the values of h, hDot, hDDot
+        They are defined as follows:
+            zNom ((2x1) NumPy Array): this is the nominal tracking input to the system, generated by the feedback linearizing controller above
+            self.barriers (List): this is a list of TurtlebotBarrierDeadlock objects, corresponding to all of the barrier functions
+            associated with this particular turtlebot. 
+            
+        Recall that to get the value of a barrier function and its derivatives, we can use the following syntax 
+        (defined in lyapunov_barrier.py), where bar is an object within the self.barriers list:
             h, hDot, hDDot = bar.eval(u, t)
+        Where u is a 2x1 input vector.
+        """
 
-            #compute the optimization constraint
-            opti.subject_to(hDDot + k2*hDot + k1*h >= 0)
+        #TODO: use a CBF-QP with Casadi to calculate the safe z input to the system
 
-        #define the cost function
-        cost = (u - zNom).T @ H @ (u - zNom)
+        zSafe = ...
 
-        opti.minimize(cost)
-        option = {"verbose": False, "ipopt.print_level": 0, "print_time": 0}
-        opti.solver("ipopt", option)
+        #return zSafe
+        return zSafe
 
-        #solve optimization
-        try:
-            sol = opti.solve()
-            uOpt = sol.value(u) #extract optimal input
-            solverFailed = False
-        except:
-            print("Solver failed!")
-            solverFailed = True
-            uOpt = np.zeros((2, 1))
-        #evaluate and return the input
-        zOpt = uOpt.reshape((2, 1))
-        return zOpt
+    def eval_w_input(self, t, z):
+        """
+        Solve for the w input to the system
+        Inputs:
+            t (float): current time in the system
+            z ((2x1) NumPy Array): z input to the system
+        """
+        #get the state of the turtlebot
+        qe = self.observer.get_state()
+
+        #get the derivative of q of the turtlebot
+        qeDot = self.observer.get_vel()
+
+        #get the trajectory states
+        xD, vD, aD = self.trajectory.get_state(t)
+
+        """
+        TODO: Your code here
+        In this function, you will determine the augmented input w = [w1, w2]^T to the turtlebot using a feedback
+        linearizing controller. Several useful terms for this controller have been extracted above for you.
+
+        They are defined as follows:
+            z (2x1 NumPy Array): z input to the system as determined by the function eval_z_input() above
+            qe (3x1 NumPy Array): current state vector [x, y, phi]^T of the turtlebot we wish to control
+            qeDot (3x1 NumPy Array): current derivative of the state vector [xDot, yDot, phiDot]^T of the turtlebot we wish to control
+            xD, vD, aD (3x1 NumPy Arrays): desired state vector, desired derivative of state vector, desired second derivative of state vector
+            from a desired trajectory. These give the necessary parameters of the trajectory we wish the turtlebot to track. Recall that we 
+            only care about the [x, y] components of these trajectories, as our outputs are x and y.
+
+        Hints: Should this function be different than for the pure FB linearization case?
+        NOTE: In this function, the subscript 'e' stands for 'ego' - this is the name of the turtlebot we wish to control.
+        """
+
+        #TODO: calculate the w input to the system based on the z input passed into the function
+        w = ...
+
+        return w
     
     def eval_input(self, t):
         """
         Evaluate the u input to the system using deadlock resolution.
         """
-        #first, evaluate the z input based on the CBF constraints
+        #first, evaluate the optimal z input based on the CBF constraints
         zOpt = self.eval_z_input(t)
 
-        #SET THE VALUE OF Z IN THE DYNAMICS
+        #SET THE VALUE OF Z IN THE DYNAMICS - DO NOT CHANGE THIS LINE
         self.observer.dynamics.set_z(zOpt, self.observer.index)
 
         #next, evaluate w input based on the CBF z input
-        wOpt = self.nominalController.eval_w_input(t, zOpt)
-        
-        #integrate the w1 term to get v
-        self.vDotInt += wOpt[0, 0]*self.dt
+        wOpt = self.eval_w_input(t, zOpt)
 
-        #return the [v, omega] input
-        self._u = np.array([[self.vDotInt, wOpt[1, 0]]]).T
+        """
+        TODO: Your code here
+        In this function, you will determine the input u = [v, omega]^T to the turtlebot using a feedback
+        linearizing controller. Several useful terms for this controller have been extracted above for you.
+
+        Once you've calculated your control input, you should store it in the variable self._u at the bottom of this function.
+        Hints: To keep track of the integrated input, define an integral parameter in the class that you can refer to each time
+        the function is called.
+        
+        NOTE: The time step for integration is stored in self.dt if you choose to use a numerical integral in your code.
+        """
+        
+        #TODO: calculate self._u = [v, omega]^T
+
+        self._u = ...
+
+        #return self._u
         return self._u
     
 class TurtlebotCBFQPVision(TurtlebotCBFQPDeadlock):
@@ -359,6 +376,107 @@ class TurtlebotCBFQPVision(TurtlebotCBFQPDeadlock):
         """
         #call the super class init
         super().__init__(observer, barriers, trajectory)
+
+    def eval_z_input(self, t):
+        """
+        Evaluate the Z input to the system based off of the CBF QP with deadlock resolution.
+        Applies a CBF-QP around the nominal z input from feedback linearization.
+        """
+        #first, get zNominal from the nominal FB lin contorller
+        zNom = self.nominalController.eval_z_input(t)
+
+        """
+        TODO: Your code here
+        In this function, you will determine the SAFE input z to the turtlebot using a CBF-QP.
+        Several useful terms for this controller have been extracted above for you.
+
+        They are defined as follows:
+            zNom ((2x1) NumPy Array): this is the nominal tracking input to the system, generated by the feedback linearizing controller above
+            self.barriers (List): this is a list of TurtlebotBarrierVision objects, corresponding to all of the barrier functions
+            associated with this particular turtlebot. These are the PURELY VISION-BASED BARRIER FUNCTIONS.
+            
+        Recall that to get the value of a barrier function and its derivatives, we can use the following syntax 
+        (defined in lyapunov_barrier.py), where bar is an object within the self.barriers list:
+            h, hDot, hDDot = bar.eval(u, t)
+        Where u is a 2x1 input vector.
+        """
+
+        #TODO: use a CBF-QP with Casadi to calculate the safe z input to the system
+
+        zSafe = ...
+
+        #return zSafe
+        return zSafe
+
+    def eval_w_input(self, t, z):
+        """
+        Solve for the w input to the system
+        Inputs:
+            t (float): current time in the system
+            z ((2x1) NumPy Array): z input to the system
+        """
+        #get the state of the turtlebot
+        qe = self.observer.get_state()
+
+        #get the derivative of q of the turtlebot
+        qeDot = self.observer.get_vel()
+
+        #get the trajectory states
+        xD, vD, aD = self.trajectory.get_state(t)
+
+        """
+        TODO: Your code here
+        In this function, you will determine the augmented input w = [w1, w2]^T to the turtlebot using a feedback
+        linearizing controller. Several useful terms for this controller have been extracted above for you.
+
+        They are defined as follows:
+            z (2x1 NumPy Array): z input to the system as determined by the function eval_z_input() above
+            qe (3x1 NumPy Array): current state vector [x, y, phi]^T of the turtlebot we wish to control
+            qeDot (3x1 NumPy Array): current derivative of the state vector [xDot, yDot, phiDot]^T of the turtlebot we wish to control
+            xD, vD, aD (3x1 NumPy Arrays): desired state vector, desired derivative of state vector, desired second derivative of state vector
+            from a desired trajectory. These give the necessary parameters of the trajectory we wish the turtlebot to track. Recall that we 
+            only care about the [x, y] components of these trajectories, as our outputs are x and y.
+
+        Hints: Should this function be different than for the pure FB linearization case?
+        NOTE: In this function, the subscript 'e' stands for 'ego' - this is the name of the turtlebot we wish to control.
+        """
+
+        #TODO: calculate the w input to the system based on the z input passed into the function
+        w = ...
+
+        return w
+    
+    def eval_input(self, t):
+        """
+        Evaluate the u input to the system using deadlock resolution.
+        """
+        #first, evaluate the optimal z input based on the CBF constraints
+        zOpt = self.eval_z_input(t)
+
+        #SET THE VALUE OF Z IN THE DYNAMICS - DO NOT CHANGE THIS LINE
+        self.observer.dynamics.set_z(zOpt, self.observer.index)
+
+        #next, evaluate w input based on the CBF z input
+        wOpt = self.eval_w_input(t, zOpt)
+
+        """
+        TODO: Your code here
+        In this function, you will determine the input u = [v, omega]^T to the turtlebot using a feedback
+        linearizing controller. Several useful terms for this controller have been extracted above for you.
+
+        Once you've calculated your control input, you should store it in the variable self._u at the bottom of this function.
+        Hints: To keep track of the integrated input, define an integral parameter in the class that you can refer to each time
+        the function is called.
+        
+        NOTE: The time step for integration is stored in self.dt if you choose to use a numerical integral in your code.
+        """
+        
+        #TODO: calculate self._u = [v, omega]^T
+
+        self._u = ...
+
+        #return self._u
+        return self._u
     
         
 

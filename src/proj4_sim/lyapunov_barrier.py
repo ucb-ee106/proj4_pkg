@@ -66,35 +66,6 @@ class TurtlebotBarrier(LyapunovBarrier):
         #define the radius of the turtlebot
         self.rt = 0.15
     
-    def eval(self, u, t):
-        """
-        Evaluate the Euclidean distance to the barrier point.
-        Args:
-            u (input_dimn x 1 numpy array): input vector
-        Returns:
-            (List): cbf time derivatives
-        """
-        #get the position and velocity of the ego and the obstacle objects
-        qe = self.observerEgo.get_state()
-
-        #calculate qeDot from system dynamics (Not from observer ego)
-        phi = qe[2, 0]
-        qeDot = np.array([[np.cos(phi), 0], [np.sin(phi), 0], [0, 1]])@u
-
-        #get the obstacle states from the observer
-        qo = self.observerObstacle.get_state()
-        qoDot = self.observerObstacle.get_vel()
-
-        #evaluate the CBF
-        h = (qe[0, 0] - qo[0, 0])**2 + (qe[1, 0] - qo[1, 0])**2 - (2*self.rt)**2
-
-        #evaluate the derivative of the CBF
-        hDot = 2*(qe[0, 0] - qo[0, 0])*((qeDot[0, 0] - qoDot[0, 0])) + 2*(qe[1, 0] - qo[1, 0])*((qeDot[1, 0] - qoDot[1, 0]))
-        
-        #return the two derivatives and the barrier function
-        self._vals = [h, hDot]
-        return self._vals
-    
 class TurtlebotBarrierDeadlock(TurtlebotBarrier):
     def __init__(self, stateDimn, inputDimn, dynamics, observerEgo, observerObstacle, buffer):
         """
@@ -108,9 +79,9 @@ class TurtlebotBarrierDeadlock(TurtlebotBarrier):
         """
         Evaluate the CBF and its derivatives. 
         Inputs:
-            u ((2x1) NumPy Array): the z input to the linearized system.
+            u ((2x1) NumPy Array): the z input to the linear system from feedback linearization
         Returns:
-            [h, hDot, hDDot] (Python List of floats): barrier function and its derivatives
+            [h, hDot, hDDot] (Python List of floats): barrier function and its derivatives along the trajectories of the linear system
         """
         #get the position and velocity of the ego and the obstacle objects
         qe = self.observerEgo.get_state()
@@ -123,16 +94,35 @@ class TurtlebotBarrierDeadlock(TurtlebotBarrier):
         qoDot = self.observerObstacle.get_vel()
         zo = self.observerObstacle.get_z()
 
-        #evaluate the CBF
-        h = (qe[0, 0] - qo[0, 0])**2 + (qe[1, 0] - qo[1, 0])**2 - (2*self.rt)**2
+        """
+        TODO: Your code here:
 
-        #evaluate the derivative of the CBF
-        hDot = 2*(qe[0, 0] - qo[0, 0])*((qeDot[0, 0] - qoDot[0, 0])) + 2*(qe[1, 0] - qo[1, 0])*((qeDot[1, 0] - qoDot[1, 0]))
+        Evaluate your control barrier function and its derivatives. Once you've
+        evaluated its derivatives (ex: h, hDot, hDdot, ...) place them in the self._vals
+        list provided at the bottom of this function.
 
-        #using the linearized dynamics, return the second derivative of the CBF
-        hDDot = 2*(qeDot[0, 0] - qoDot[0, 0])**2 + 2*(qe[0, 0] - qo[0, 0])*((u[0] - zo[0, 0])) + 2*(qeDot[1, 0] - qoDot[1, 0])**2 + 2*(qe[1, 0] - qo[1, 0])*((u[1] - zo[1, 0]))
+        In this code, a subscript 'e' stands for ego - this is the turtlebot we wish to control.
+        A subscript 'o' stands for obstacle - these are for the turtlebots we wish to avoid.
         
-        #return the two derivatives and the barrier function
+        All necessary states have been extracted above for you. You don't necessarily need to use all of these
+        terms in your CBF and derivative calculations, but they may be helpful.
+
+            u ((2x1) Casadi array) is the input to the system from a casadi optimization
+            t (float) is the current time in the simulation
+            qe ((3x1) NumPy array) is the current state vector of the turtlebot we wish to control
+            qeDot ((3x1) NumPy array) is the current time derivative of the state vector of the turtlebot we wish to control
+            qo ((3x1) NumPy array) is the current state vector of the obstacle turtlebot we wish to avoid
+            qoDot ((3x1) NumPy array) is the derivative of the obstacle turtlebot's state vector [xDot, yDot, phiDot]
+            zo ((2x1) NumPy Array) is the current input being sent to the obstacle turtlebot in the INNERMOST feedback linearizing step
+        
+        NOTE: The radius of the turtlebot is stored in self.rt - you may assume all turtlebots have the same radius.
+        """
+
+        h = ...
+        hDot = ...
+        hDDot = ...
+
+        #TODO: calculate h, hDot, hDDot and place them in this list (h and its first and second time derivatives)
         self._vals = [h, hDot, hDDot]
         return self._vals
     
@@ -153,35 +143,6 @@ class TurtlebotBarrierVision(TurtlebotBarrierDeadlock):
         #define the radius of the turtlebot
         self.rt = 0.15
 
-    def calc_rotation(self, qe):
-        """
-        Calculates the rotation matrix Rse associated with a particular state vector
-        Inputs:
-            qe ((3x1) NumPy Array): state vector of the ego turtlebot
-        Returns:
-            Rse ((3x3) NumPy Array): rotation matrix from the ego frame to spatial frame
-        """
-        phi = qe[2, 0]
-        Rse = np.array([[np.cos(phi), -np.sin(phi), 0], [np.sin(phi), np.cos(phi), 0], [0, 0, 1]])
-        return Rse
-
-    def ptcloud_to_spatial(self, ptcloudDict):
-        """
-        Transforms the pointcloud from the ego turtlebot frame in which it was taken
-        to the spatial frame. 
-        Inputs:
-            ptcloudDict (Dictionary): {'ptcloud', 'stateVec'} dictionary
-        Returns:
-            ptcloudSpatial ((3xN) NumPy Array): pointcloud transformed to the world frame
-        """
-        #calculate rotation and position
-        Rse = self.calc_rotation(ptcloudDict['stateVec'])
-        qe = ptcloudDict['stateVec']
-        pse = np.array([[qe[0, 0], qe[1, 0], 0]]).T
-
-        #transform ptcloud using pse, Rse
-        return Rse @ ptcloudDict['ptcloud'] + pse
-
     def eval(self, u, t):
         """
         Evaluate the CBF and its derivatives. 
@@ -190,6 +151,7 @@ class TurtlebotBarrierVision(TurtlebotBarrierDeadlock):
         Returns:
             [h, hDot, hDDot] (Python List of floats): barrier function and its derivatives
         """
+        
         #get the position and velocity of the ego and the obstacle objects
         qe = self.observerEgo.get_state()
 
@@ -199,27 +161,39 @@ class TurtlebotBarrierVision(TurtlebotBarrierDeadlock):
         #Call the lidar update step to recompute pointcloud
         ptcloudDict = self.lidarEgo.get_pointcloud(update = True)
 
-        #get the pointcloud in the spatial frame
-        ptcloudSpatial = self.ptcloud_to_spatial(ptcloudDict)
+        """
+        TODO: Your code here:
 
-        #get the closest point in the pointcloud as qo for barrier computation
-        diffmatrix = ptcloudSpatial - qe
-        normMatrix = np.linalg.norm(diffmatrix, axis = 0) #get the norms of the columns
-        colMin = np.argmin(normMatrix) #find the closest column
-        qo = ptcloudSpatial[:, colMin].reshape((3, 1)) #define the obstacle point from the closest column
+        Evaluate your control barrier function and its derivatives. Once you've
+        evaluated its derivatives (ex: h, hDot, hDdot, ...) place them in the self._vals
+        list provided at the bottom of this function.
 
-        #assume the obstacle velocities and accelerations are negligible
-        qoDot = np.zeros((3, 1))
-        zo = np.zeros((3, 1))
+        In this code, a subscript 'e' stands for ego - this is the turtlebot we wish to control.
+        
+        All necessary states have been extracted above for you. You don't necessarily need to use all of these
+        terms in your CBF and derivative calculations, but they may be helpful. You no longer have direct access 
+        to the obstacle turtlebot states, and now have to rely purely on lidar data for obstacle avoidance.
+        You'll have to make a few assumptions about the environment to apply CBF control in this case.
 
-        #evaluate the CBF
-        h = (qe[0, 0] - qo[0, 0])**2 + (qe[1, 0] - qo[1, 0])**2 - (2*self.rt)**2
+            u ((2x1) Casadi array) is the input to the system from a casadi optimization
+            t (float) is the current time in the simulation
+            qe ((3x1) NumPy array) is the current state vector of the turtlebot we wish to control
+            qeDot ((3x1) NumPy array) is the current time derivative of the state vector of the turtlebot we wish to control
+            ptcloudDict (Dictionary) is the dictionary containing the pointcloud and the state vector of the ego turtlebot
+            at the instant the pointcloud was taken. The dictionary has the structure:
+                ptcloudDict = {'ptcloud': (3xN NumPy Array), 'stateVec': (3x1 NumPy Array)}
+            Where calling ptcloudDict['ptcloud'] returns the [x, y, z] pointcloud of the surroundings as taken by the lidar. 
+            Each column of this pointcloud is a 3D point detected by the lidar within the frame of the ego turtlebot (the bot we wish to control).
+        
+        NOTE: You may assume that the z coordinate of each point in the pointcloud will always be zero.
+        NOTE: The radius of the turtlebot is stored in self.rt - you may assume all turtlebots have the same radius.
+        Hints: You may find it useful to define helper functions to calculate the rotation matrix of the turtlebot to the world frame and to
+        transform the pointcloud to the world frame.
+        """
 
-        #evaluate the derivative of the CBF
-        hDot = 2*(qe[0, 0] - qo[0, 0])*((qeDot[0, 0] - qoDot[0, 0])) + 2*(qe[1, 0] - qo[1, 0])*((qeDot[1, 0] - qoDot[1, 0]))
-
-        #using the linearized dynamics, return the second derivative of the CBF
-        hDDot = 2*(qeDot[0, 0] - qoDot[0, 0])**2 + 2*(qe[0, 0] - qo[0, 0])*((u[0] - zo[0, 0])) + 2*(qeDot[1, 0] - qoDot[1, 0])**2 + 2*(qe[1, 0] - qo[1, 0])*((u[1] - zo[1, 0]))
+        h = ...
+        hDot = ...
+        hDDot = ...
         
         #return the two derivatives and the barrier function
         self._vals = [h, hDot, hDDot]
