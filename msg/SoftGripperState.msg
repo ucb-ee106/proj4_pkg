@@ -1,7 +1,0 @@
-float64 time
-float64 left_pwm
-float64 left_pressure
-float64 left_flex
-float64 right_pwm
-float64 right_pressure
-float64 right_flex
