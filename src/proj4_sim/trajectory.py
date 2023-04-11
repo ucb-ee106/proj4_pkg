@@ -1,6 +1,10 @@
 import numpy as np
 import time
 
+"""
+Authors: Massimiliano de Sa, Spring 2023.
+"""
+
 class Trajectory:
     def __init__(self, start, end, T):
         """

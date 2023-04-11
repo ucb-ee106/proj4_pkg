@@ -1,5 +1,9 @@
 import numpy as np
 
+"""
+Authors: Massimiliano de Sa, Spring 2023.
+"""
+
 class StateObserver:
     def __init__(self, dynamics, mean = None, sd = None):
         """

@@ -1,5 +1,6 @@
 """
 Master simulation file for a vision-based CBF-QP controller.
+Authors: Massimiliano de Sa, Spring 2023.
 """
 #Our dependencies
 from environment import *

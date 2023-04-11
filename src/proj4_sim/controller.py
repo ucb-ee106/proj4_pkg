@@ -4,7 +4,9 @@ from state_estimation import *
 
 """
 File containing controllers 
+Authors: Massimiliano de Sa, Spring 2023.
 """
+
 class Controller:
     def __init__(self, observer, lyapunov = None, trajectory = None, obstacleQueue = None, uBounds = None):
         """
@@ -96,6 +98,11 @@ class TurtlebotFBLin:
         """
         Solve for the input z to the feedback linearized system.
         Use linear tracking control techniques to accomplish this.
+
+        Inputs:
+            t (float): current time in simulation
+        Returns:
+            z ((2x1) NumPy Array): z input to the linear system
         """
         #get the state of the turtlebot
         qe = self.observer.get_state()
@@ -134,6 +141,8 @@ class TurtlebotFBLin:
         Inputs:
             t (float): current time in the system
             z ((2x1) NumPy Array): z input to the system
+        Returns:
+            w ((2x1) NumPy Array: w input to the augmented system
         """
         #get the state of the turtlebot
         qe = self.observer.get_state()
@@ -170,6 +179,8 @@ class TurtlebotFBLin:
         Solves for the control input to the ego turtlebot using a feedback linearizing controller.
         Inputs:
             t (float): current time in simulation
+        Returns:
+            self._u ((2x1) NumPy array): input vector to the turtlebot
         """
 
         #get the z input to the system
@@ -267,6 +278,11 @@ class TurtlebotCBFQPDeadlock(TurtlebotCBFQP):
         """
         Evaluate the Z input to the system based off of the CBF QP with deadlock resolution.
         Applies a CBF-QP around the nominal z input from feedback linearization.
+
+        Inputs:
+            t (float): current time in simulation
+        Returns:
+            zSafe ((2x1) NumPy Array): SAFE z input to the linear system
         """
         #first, get zNominal from the nominal FB lin contorller
         zNom = self.nominalController.eval_z_input(t)
@@ -300,6 +316,8 @@ class TurtlebotCBFQPDeadlock(TurtlebotCBFQP):
         Inputs:
             t (float): current time in the system
             z ((2x1) NumPy Array): z input to the system
+        Returns:
+            w ((2x1) NumPy Array): w input to the system
         """
         #get the state of the turtlebot
         qe = self.observer.get_state()
@@ -335,6 +353,10 @@ class TurtlebotCBFQPDeadlock(TurtlebotCBFQP):
     def eval_input(self, t):
         """
         Evaluate the u input to the system using deadlock resolution.
+        Inputs:
+            t (float): current time in simulation
+        Returns:
+            self._u ((2x1) NumPy array): safe input to the turtlebot
         """
         #first, evaluate the optimal z input based on the CBF constraints
         zOpt = self.eval_z_input(t)
@@ -342,7 +364,7 @@ class TurtlebotCBFQPDeadlock(TurtlebotCBFQP):
         #SET THE VALUE OF Z IN THE DYNAMICS - DO NOT CHANGE THIS LINE
         self.observer.dynamics.set_z(zOpt, self.observer.index)
 
-        #next, evaluate w input based on the CBF z input
+        #next, evaluate the optimal w input based on the CBF z input
         wOpt = self.eval_w_input(t, zOpt)
 
         """
@@ -456,7 +478,7 @@ class TurtlebotCBFQPVision(TurtlebotCBFQPDeadlock):
         #SET THE VALUE OF Z IN THE DYNAMICS - DO NOT CHANGE THIS LINE
         self.observer.dynamics.set_z(zOpt, self.observer.index)
 
-        #next, evaluate w input based on the CBF z input
+        #next, evaluate optimal w input based on the CBF z input
         wOpt = self.eval_w_input(t, zOpt)
 
         """

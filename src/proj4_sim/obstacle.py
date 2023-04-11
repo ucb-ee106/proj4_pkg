@@ -1,6 +1,10 @@
 import numpy as np
 #File containing classes involved in managing obstacle avoidance.
 
+"""
+Authors: Massimiliano de Sa, Spring 2023.
+"""
+
 class Circle:
     def __init__(self, r, c):
         """

@@ -9,11 +9,15 @@
 import rospy
 import numpy as np
 
-from state_estimation import StateObserver, EgoTurtlebotObserver
+from state_estimation import EgoTurtlebotObserver
 from trajectory import Trajectory
-from controller import Controller, TurtlebotFBLin, TurtlebotCBFQP
+from controller import TurtlebotFBLin, TurtlebotCBFQP
 from lidar import Lidar
 from lyapunov_barrier import TurtlebotBarrierVision
+
+"""
+Authors: Han Nguyen, Massimiliano de Sa, Spring 2023.
+"""
 
 #Define the method which contains the main functionality of the node.
 def task_controller():
@@ -25,7 +29,7 @@ def task_controller():
   # Initialization Time
   start_time = rospy.get_time()
   frequency = 50
-  r = rospy.Rate(frequency) # 10hz
+  r = rospy.Rate(frequency) # 50hz
 
   # Observer
   observer = EgoTurtlebotObserver()
@@ -47,8 +51,16 @@ def task_controller():
   v_bounds = np.array([-0.10, 0.22])
   w_bounds = np.array([-2.84, 2.84])
   uBounds = np.vstack((v_bounds, w_bounds))
-  controller = TurtlebotFBLin(observer, trajectory, frequency, uBounds)
-  # controller = TurtlebotCBFQP(observer, barriers, trajectory, frequency, uBounds)
+
+
+
+  #TODO: SELECT YOUR CONTROLLER HERE. YOU MAY SWITCH BETWEEEN FB LINEARIZATION AND CBF-QP THROUGH THESE LINES:
+  #set to true to apply CBF-QP control
+  useCBFQP = False 
+  if not useCBFQP:
+    controller = TurtlebotFBLin(observer, trajectory, frequency, uBounds)
+  else:
+    controller = TurtlebotCBFQP(observer, barriers, trajectory, frequency, uBounds)
 
   # Loop until the node is killed with Ctrl-C
   while not rospy.is_shutdown():

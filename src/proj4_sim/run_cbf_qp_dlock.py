@@ -1,5 +1,6 @@
 """
 Master simulation file for a CBF-QP Controller with deadlock resolution.
+Authors: Massimiliano de Sa, Spring 2023.
 """
 #Our dependencies
 from environment import *

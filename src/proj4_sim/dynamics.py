@@ -2,6 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
 
+"""
+Authors: Massimiliano de Sa, Spring 2023.
+"""
+
 class Dynamics:
     """
     Skeleton class for system dynamics

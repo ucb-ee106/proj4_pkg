@@ -1,5 +1,9 @@
 import numpy as np
 
+"""
+Authors: Massimiliano de Sa, Spring 2023.
+"""
+
 class LyapunovBarrier:
     """
     Skeleton class for Lyapunov/Barrier functions.
@@ -80,6 +84,7 @@ class TurtlebotBarrierDeadlock(TurtlebotBarrier):
         Evaluate the CBF and its derivatives. 
         Inputs:
             u ((2x1) NumPy Array): the z input to the linear system from feedback linearization
+            t (float): current time in simulation
         Returns:
             [h, hDot, hDDot] (Python List of floats): barrier function and its derivatives along the trajectories of the linear system
         """
@@ -148,6 +153,7 @@ class TurtlebotBarrierVision(TurtlebotBarrierDeadlock):
         Evaluate the CBF and its derivatives. 
         Inputs:
             u ((2x1) NumPy Array): the z input to the linearized system.
+            t (float): current time in simulation
         Returns:
             [h, hDot, hDDot] (Python List of floats): barrier function and its derivatives
         """

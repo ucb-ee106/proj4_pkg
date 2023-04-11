@@ -5,7 +5,9 @@ from geometry_msgs.msg import Twist
 
 """
 File containing controllers 
+Authors: Han Nguyen, Massimiliano de Sa, Spring 2023.
 """
+
 class Controller:
     def __init__(self, observer, trajectory = None, uBounds = None):
         """
@@ -67,9 +69,6 @@ class TurtlebotFBLin:
         #store the time step dt for integration
         self.dt = 1/frequency #from the control frequency in environment.py
 
-        #store an initial value for the vDot integral
-        self.vDotInt = 0
-
         #previous control input
         self.previous_u_input = np.array([0., 0.]).reshape(2,1)
 
@@ -85,28 +84,28 @@ class TurtlebotFBLin:
         """
         Solve for the input z to the feedback linearized system.
         Use linear tracking control techniques to accomplish this.
+        Inputs:
+            t (float): current time
+        Returns:
+            z ((2x1) NumPy array)
         """
         #get the state of turtlebot i
-        q = self.observer.get_state()
+        qe = self.observer.get_state()
 
         #get the derivative of q of turtlebot i
-        qDot = self.observer.get_vel(self.previous_u_input)
+        qeDot = self.observer.get_vel(self.previous_u_input)
 
         #get the trajectory states
         xD, vD, aD = self.trajectory.get_state(t)
 
-        #form the augmented state vector.
-        qPrime = np.array([q[0], q[1], qDot[0], qDot[1]]).T
+        """
+        TODO: Your code here:
+        Apply feedback linearization to calculate the z input to the system.
+        The current state vector, its derivative, and the desired states and their derivatives
+        have been extracted above for you. Your code should be the same as the simulation code here.
+        """
 
-        #form the augmented desired state vector
-        qPrimeDes = np.array([xD[0], xD[1], vD[0], vD[1]]).T
-
-        #find a control input z to the augmented system
-        k1 = 4 #pick k1, k2 s.t. eddot + k2 edot + k1 e = 0 has stable soln
-        k2 = 4
-        e = np.array([[xD[0], xD[1]]]).T - np.array([[q[0], q[1]]]).T
-        eDot = np.array([[vD[0], vD[1]]]).T - np.array([[qDot[0], qDot[1]]]).T
-        z = aD[0:2].reshape((2, 1)) + k2*eDot + k1 * e
+        z = ...
 
         #return the z input
         return z
@@ -116,31 +115,31 @@ class TurtlebotFBLin:
         Solve for the w input to the system
         Inputs:
             t (float): current time in the system
-            z ((2x1) NumPy Array): z input to the system
+            z ((2x1) NumPy Array): z input to the linear system
+        Returns:
+            w ((2x1) NumPy Array): w input to the system
         """
-        #get the current phi
-        phi = self.observer.get_state()[2]
+        #get the current state
+        qe = self.observer.get_state()
 
-        #get the (xdot, ydot) velocity
-        qDot = self.observer.get_vel(self.previous_u_input)[0:2]
-        v = np.linalg.norm(qDot)
+        """
+        TODO: Your code here
+        Apply feedback linearization to calculate the w input to the system.
+        The z input to the system has been passed into this function as an argument.
+        """
 
-        #first, eval A(q)
-        Aq = np.array([[np.cos(phi), -v*np.sin(phi)], 
-                       [np.sin(phi), v*np.cos(phi)]])
-
-        #invert to get the w input - use pseudoinverse to avoid problems
-        w = np.linalg.pinv(Aq)@z
+        w = ...
 
         #return w input
         return w
 
     def eval_input(self, t):
         """
-        Solves for the control input to turtlebot i using a CBF-QP controller.
+        Solves for the control input to turtlebot i using a feedback linearizing controller.
         Inputs:
             t (float): current time in simulation
-            i (int): index of turtlebot in the system we wish to control (zero indexed)
+        Returns:
+            self._u ((2x1) NumPy array): u input to the turtlebot
         """
         #get the z input to the system
         z = self.eval_z_input(t)
@@ -148,11 +147,15 @@ class TurtlebotFBLin:
         #get the w input to the system
         w = self.eval_w_input(t, z)
 
-        #integrate the w1 term to get v
-        self.vDotInt += w[0, 0]*self.dt
+        """
+        TODO: Your code here
+        Using z and w, calculated from your functions above, calculate u = [v, omega]^T
+        to the system. Once you've computed u, store it in self._u
+        """
+
+        self._u = ...
 
         #return the [v, omega] input
-        self._u = np.array([[self.vDotInt, w[1, 0]]]).T
         return self._u
     
     def get_input(self):
@@ -175,8 +178,9 @@ class TurtlebotCBFQP:
     def __init__(self, observer, barriers, trajectory, frequency, uBounds):
         """
         Class for a CBF-QP controller for a single turtlebot within a larger system. This implementation
-        applies a CBF-QP directly over the turtlebot feedback linearizing input, and does not include 
-        deadlock resolution steps.
+        applies a CBF-QP directly over the turtlebot feedback linearizing input - it is not nested within the
+        feedback linearization step. This CBF-QP should be relative degree 1.
+
         Args:
             observer (EgoTurtlebotObserver): state observer object for a single turtlebot within the system
             barriers (List of TurtlebotBarrier): List of TurtlebotBarrier objects corresponding to that turtlebot
@@ -200,51 +204,34 @@ class TurtlebotCBFQP:
         Solves for the control input to turtlebot i using a CBF-QP controller.
         Inputs:
             t (float): current time in simulation
-            i (int): index of turtlebot in the system we wish to control (zero indexed)
-            dLock (boolean): include deadlock resolution strategy in controller
+        Returns:
+            self._u ((2x1) NumPy array): safe input vector
         """
         #get the state vector of turtlebot i
         q = self.observer.get_state()
 
-        #get the nominal control input to the system
-        self.nominalController.eval_input(t) #call the evaluation function
-        kX = self.nominalController.get_input().reshape((2, 1))
+        #get the nominal control input to the system using the controller written above
+        kX = self.nominalController.eval_input(t)
 
-        #set up the optimization problem
-        opti = ca.Opti()
-
-        #define the decision variable
-        u = opti.variable(2, 1)
-
-        #define gamma for CBF tuning
-        gamma = 1
-
-        #apply the N-1 barrier constraints
-        for bar in self.barriers:
-            #get the values of h and hDot
+        """
+        TODO: Your code here
+        Apply a CBF-QP directly around the nominal control input kx = [v, omega]^T from the 
+        tracking controller. As opposed to the CBF-QP implemented in simulation, this CBF-QP
+        should only involve the first derivative of h in the optimization constraint.
+        
+        The barrier function objects are stored in self.barriers, which is a list containing 
+        the barrier function objects for the system. To evaluate the value of a barrier function, you
+        can use:
             h, hDot = bar.eval(u, t)
-            print(h)
+        Where bar is one of the barrier function objects stored in the self.barriers list and u is the 
+        input vector from casadi.
+        """
 
-            #compute the optimization constraint
-            opti.subject_to(hDot >= -gamma * h)
+        #TODO: Apply casadi to solve for the safe input u
 
-        cost = (u - kX).T @ (u - kX)
+        self._u = ...
 
-        opti.minimize(cost)
-        option = {"verbose": False, "ipopt.print_level": 0, "print_time": 0}
-        opti.solver("ipopt", option)
-
-        #solve optimization
-        try:
-            sol = opti.solve()
-            uOpt = sol.value(u) #extract optimal input
-            solverFailed = False
-        except:
-            print("Solver failed!")
-            solverFailed = True
-            uOpt = np.zeros((2, 1))
-        #evaluate and return the input
-        self._u = uOpt.reshape((2, 1))
+        #return the safe input
         return self._u
     
     def get_input(self):

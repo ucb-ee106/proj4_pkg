@@ -1,5 +1,9 @@
 import numpy as np
 
+"""
+Authors: Massimiliano de Sa, Spring 2023.
+"""
+
 class Environment:
     def __init__(self, dynamics, controller, observer, T = 10):
         """

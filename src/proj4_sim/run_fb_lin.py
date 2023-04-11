@@ -1,6 +1,8 @@
 """
 Master simulation file for a feedback linearizing controller (pure feedback linearization)
+Authors: Massimiliano de Sa, Spring 2023.
 """
+
 #Our dependencies
 from environment import *
 from dynamics import *

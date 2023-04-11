@@ -1,5 +1,6 @@
 """
 Utilities file for running simulations. Includes functions to generate initial and goal states.
+Authors: Massimiliano de Sa, Spring 2023.
 """
 import numpy as np
 
