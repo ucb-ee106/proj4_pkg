@@ -20,6 +20,7 @@ class Lidar:
 		# Loop over all ranges in the LaserScan.
 		r_min = 20			# Initialize at random impossible values
 		angle_min = 1000
+		self._pointcloud = np.ones((3,260))*5
 		for idx, r in enumerate(msg.ranges):
 			# Throw out this point if it is too close or too far away.
 			if r > self._range_max:
